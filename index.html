@@ -13,36 +13,98 @@
     img{max-width:100%;height:auto;border-radius:8px;box-shadow:0 6px 30px rgba(0,0,0,.6);display:block;margin:0 auto}
     .counter{margin-top:12px;font-size:18px;color:var(--muted)}
     .visits{font-weight:700;font-size:28px;margin-top:6px}
+    .init-btn{margin-top:8px;font-size:12px;opacity:.7}
+    .init-btn a{color:var(--muted);text-decoration:underline}
   </style>
 </head>
 <body>
   <div class="card">
     <img id="hero" src="meatball.jpg" alt="Meatball sub" />
-    <div class="counter">site visits <div class="visits" id="counter">...</div></div>
+    <div class="counter">
+      site visits
+      <div class="visits" id="counter">—</div>
+      <div class="init-btn" id="init" style="display:none;">
+        Having trouble? <a id="initLink" href="#" target="_blank" rel="noopener">Initialize counter</a>
+      </div>
+    </div>
   </div>
 
   <script>
   (async () => {
-    const BASE = "https://countapi.mileshillard.com/api/v1";
     const KEY = "scottylandes";
+    const HOSTS = [
+      "https://countapi.mileshillard.com/api/v1",
+      "https://countapi.xyz",
+      "https://api.countapi.xyz"
+    ];
     const el = document.getElementById("counter");
+    const init = document.getElementById("init");
+    const initLink = document.getElementById("initLink");
 
-    async function json(url) {
-      const r = await fetch(url, { cache: "no-store" });
-      if (!r.ok) throw new Error(url + " " + r.status);
-      return r.json();
+    function hitViaImage(url) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(true);
+        img.onerror = () => reject(new Error("img error"));
+        img.src = url + (url.includes("?") ? "&" : "?") + "t=" + Date.now();
+      });
+    }
+
+    async function tryFetch(url) {
+      try {
+        const r = await fetch(url, { cache: "no-store" });
+        if (!r.ok) throw new Error("status " + r.status);
+        return await r.json();
+      } catch (e) {
+        throw e;
+      }
+    }
+
+    async function readValue() {
+      for (const base of HOSTS) {
+        const getURL = base.includes("mileshillard")
+          ? `${base}/get/${KEY}`
+          : `${base}/get/${KEY}`;
+        try {
+          const d = await tryFetch(getURL);
+          if (d && typeof d.value !== "undefined") return d.value;
+        } catch (_) {}
+      }
+      throw new Error("all get failed");
+    }
+
+    async function increment() {
+      // Try “hit” with fetch; if blocked, fall back to <img>
+      for (const base of HOSTS) {
+        const hitURL = base.includes("mileshillard")
+          ? `${base}/hit/${KEY}`
+          : `${base}/hit/${KEY}`;
+        try {
+          // Try fetch first
+          const d = await tryFetch(hitURL);
+          if (d && typeof d.value !== "undefined") return d.value;
+        } catch (_) {
+          // Try image ping to increment even if CORS blocks fetch
+          try {
+            await hitViaImage(hitURL);
+            // After image increments, try to read from any host
+            const v = await readValue();
+            return v;
+          } catch (_) {}
+        }
+      }
+      throw new Error("all hit failed");
     }
 
     try {
-      const data = await json(`${BASE}/hit/${KEY}`);
-      el.textContent = Number(data.value ?? 0).toLocaleString();
+      const value = await increment();
+      el.textContent = Number(value).toLocaleString();
     } catch (e) {
-      try {
-        const d2 = await json(`${BASE}/get/${KEY}`);
-        el.textContent = Number(d2.value ?? 0).toLocaleString();
-      } catch {
-        el.textContent = "—";
-      }
+      // As a last resort, show a manual initialize link
+      const firstHit = `${HOSTS[0]}/hit/${KEY}`;
+      initLink.href = firstHit;
+      init.style.display = "block";
+      el.textContent = "—";
     }
   })();
   </script>
