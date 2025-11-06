@@ -12,9 +12,13 @@
     .card{max-width:900px;width:100%;text-align:center}
     img#hero{max-width:100%;height:auto;border-radius:8px;box-shadow:0 6px 30px rgba(0,0,0,.6);display:block;margin:0 auto}
     .counter{margin-top:12px;font-size:18px;color:var(--muted)}
-    .visits{margin-top:6px;display:flex;justify-content:center}
-    /* Make the badge look like plain white text on transparent bg */
-    .visits img{height:28px;border:0;filter:invert(1) contrast(1.1);}
+    .visits{margin-top:6px;display:flex;justify-content:center;align-items:center}
+    .visits img{
+      height:40px;
+      border:0;
+      filter: invert(1) brightness(2) contrast(2);
+      transform: scale(1.4);
+    }
   </style>
 </head>
 <body>
