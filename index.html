@@ -4,77 +4,44 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>ScottyLandes.com</title>
-  <link rel="icon" type="image/png" href="meatballfavicon.png">
+  <link rel="icon" type="image/png" href="meatballfavicon.png" />
   <style>
-    :root {
-      --bg: #0b0b0b;
-      --text: #f5f5f5;
-      --muted: #9aa0a6;
-    }
-    html, body {
-      height: 100%;
-      margin: 0;
-      font-family: Inter, system-ui, Segoe UI, Roboto, Helvetica Neue, Arial;
-    }
-    body {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--bg);
-      color: var(--text);
-      flex-direction: column;
-      padding: 24px;
-    }
-    .card {
-      max-width: 900px;
-      width: 100%;
-      text-align: center;
-    }
-    img {
-      max-width: 100%;
-      height: auto;
-      border-radius: 8px;
-      box-shadow: 0 6px 30px rgba(0,0,0,.6);
-      display: block;
-      margin: 0 auto;
-    }
-    .counter {
-      margin-top: 12px;
-      font-size: 18px;
-      color: var(--muted);
-    }
-    .visits {
-      font-weight: 700;
-      font-size: 28px;
-      margin-top: 6px;
-    }
+    :root{--bg:#0b0b0b;--text:#f5f5f5;--muted:#9aa0a6}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial}
+    body{display:flex;align-items:center;justify-content:center;background:var(--bg);color:var(--text);flex-direction:column;padding:24px}
+    .card{max-width:900px;width:100%;text-align:center}
+    img{max-width:100%;height:auto;border-radius:8px;box-shadow:0 6px 30px rgba(0,0,0,.6);display:block;margin:0 auto}
+    .counter{margin-top:12px;font-size:18px;color:var(--muted)}
+    .visits{font-weight:700;font-size:28px;margin-top:6px}
   </style>
 </head>
 <body>
   <div class="card">
     <img id="hero" src="meatball.jpg" alt="Meatball sub" />
-    <div class="counter">
-      site visits
-      <div class="visits" id="counter">...</div>
-    </div>
+    <div class="counter">site visits <div class="visits" id="counter">...</div></div>
   </div>
 
   <script>
-  (async function(){
+  (async () => {
+    const BASE = "https://countapi.mileshillard.com/api/v1";
+    const KEY = "scottylandes";
+    const el = document.getElementById("counter");
+
+    async function json(url) {
+      const r = await fetch(url, { cache: "no-store" });
+      if (!r.ok) throw new Error(url + " " + r.status);
+      return r.json();
+    }
+
     try {
-      const res = await fetch('https://api.countapi.xyz/hit/scottylandes/visits');
-      if (!res.ok) throw new Error('counter request failed');
-      const data = await res.json();
-      document.getElementById('counter').textContent = data.value.toLocaleString();
-    } catch (err) {
+      const data = await json(`${BASE}/hit/${KEY}`);
+      el.textContent = Number(data.value ?? 0).toLocaleString();
+    } catch (e) {
       try {
-        const r2 = await fetch('https://api.countapi.xyz/get/scottylandes/visits');
-        const d2 = await r2.json();
-        if (d2 && d2.value !== undefined)
-          document.getElementById('counter').textContent = d2.value.toLocaleString();
-        else document.getElementById('counter').textContent = '0';
-      } catch (e) {
-        document.getElementById('counter').textContent = '—';
+        const d2 = await json(`${BASE}/get/${KEY}`);
+        el.textContent = Number(d2.value ?? 0).toLocaleString();
+      } catch {
+        el.textContent = "—";
       }
     }
   })();
